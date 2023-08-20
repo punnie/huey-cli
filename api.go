@@ -1,9 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
-	"bytes"
 
 	"encoding/json"
 	"net/http"
@@ -44,8 +44,10 @@ func RequestApi[T any](verb string, path string, payloadData interface{}) (T, er
 
 	var responseData T
 
-	if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
-		log.Fatalf("Error decoding response JSON: %v", err)
+	if resp.StatusCode != http.StatusNoContent {
+		if err := json.NewDecoder(resp.Body).Decode(&responseData); err != nil {
+			log.Fatalf("Error decoding response JSON: %v", err)
+		}
 	}
 
 	return responseData, nil

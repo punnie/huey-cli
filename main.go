@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -10,9 +9,32 @@ import (
 	// "github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 	"github.com/urfave/cli/v2"
+
+	"github.com/fatih/color"
+	"github.com/punnie/table"
 )
 
 var k = koanf.New(".")
+
+var headerFmt = color.New(color.FgGreen, color.Underline).SprintfFunc()
+var columnFmt = color.New(color.FgYellow).SprintfFunc()
+
+func isNotPiped() bool {
+	o, _ := os.Stdout.Stat()
+	return (o.Mode() & os.ModeCharDevice) == os.ModeCharDevice
+}
+
+func buildTable(headers ...interface{}) table.Table {
+	tbl := table.New(headers...)
+
+	if isNotPiped() {
+		tbl.WithHeaderFormatter(headerFmt).WithFirstColumnFormatter(columnFmt)
+	} else {
+		tbl.WithPrintHeaders(false)
+	}
+
+	return tbl
+}
 
 func main() {
 	// Defaults
@@ -40,9 +62,13 @@ func main() {
 						Action: func(ctx *cli.Context) error {
 							feeds, _ := ListAllFeeds()
 
+							tbl := buildTable("Id", "Type", "Uri", "Title")
+
 							for _, feed := range feeds.Feeds {
-								fmt.Printf("%-16s %-10s %-48s %s\n", feed.Id, feed.Type, feed.Uri, feed.Title)
+								tbl.AddRow(feed.Id, feed.Type, feed.Uri, feed.Title)
 							}
+
+							tbl.Print()
 
 							return nil
 						},
@@ -67,7 +93,11 @@ func main() {
 						Action: func(ctx *cli.Context) error {
 							feed, _ := CreateFeed(ctx.String("uri"))
 
-							fmt.Printf("%s\n", feed.Id)
+							tbl := buildTable("Id", "Uri")
+
+							tbl.AddRow(feed.Id, feed.Uri)
+
+							tbl.Print()
 
 							return nil
 						},
@@ -85,9 +115,13 @@ func main() {
 						Action: func(ctx *cli.Context) error {
 							streams, _ := ListAllStreams()
 
+							tbl := buildTable("Id", "Name", "Permalink")
+
 							for _, stream := range streams.Streams {
-								fmt.Printf("%s %s\n", stream.Id, stream.Name)
+								tbl.AddRow(stream.Id, stream.Name, stream.Permalink)
 							}
+
+							tbl.Print()
 
 							return nil
 						},
@@ -112,7 +146,11 @@ func main() {
 						Action: func(ctx *cli.Context) error {
 							stream, _ := CreateStream(ctx.String("name"), ctx.String("permalink"))
 
-							fmt.Printf("%s\n", stream.Id)
+							tbl := buildTable("Id", "Name", "Permalink")
+
+							tbl.AddRow(stream.Id, stream.Name, stream.Permalink)
+
+							tbl.Print()
 
 							return nil
 						},
@@ -130,11 +168,15 @@ func main() {
 							},
 						},
 						Action: func(ctx *cli.Context) error {
-							feeds, _ := ListStreamFeeds(ctx.String("stream_id"))
+							assignments, _ := ListStreamFeeds(ctx.String("stream_id"))
 
-							for _, feed := range feeds.Feeds {
-								fmt.Printf("%-16s %-10s %-48s %s\n", feed.Id, feed.Type, feed.Uri, feed.Title)
+							tbl := buildTable("Id", "Feed Id", "Feed Type", "Feed Uri", "Feed Title")
+
+							for _, assignment := range assignments.Feeds {
+								tbl.AddRow(assignment.Id, assignment.FeedId, assignment.FeedType, assignment.FeedUri, assignment.FeedTitle)
 							}
+
+							tbl.Print()
 
 							return nil
 						},
@@ -158,11 +200,13 @@ func main() {
 							},
 						},
 						Action: func(ctx *cli.Context) error {
-							feeds, _ := CreateStreamAssignment(ctx.String("stream_id"), ctx.String("feed_id"))
+							assignment, _ := CreateStreamAssignment(ctx.String("stream_id"), ctx.String("feed_id"))
 
-							for _, feed := range feeds.Feeds {
-								fmt.Printf("%-16s %-10s %-48s %s\n", feed.Id, feed.Type, feed.Uri, feed.Title)
-							}
+							tbl := buildTable("Id", "Feed Id", "Feed Type", "Feed Uri", "Feed Title")
+
+							tbl.AddRow(assignment.Id, assignment.FeedId, assignment.FeedType, assignment.FeedUri, assignment.FeedTitle)
+
+							tbl.Print()
 
 							return nil
 						},
@@ -186,6 +230,7 @@ func main() {
 							},
 						},
 						Action: func(ctx *cli.Context) error {
+							DestroyStreamAssignment(ctx.String("stream_id"), ctx.String("feed_id"))
 
 							return nil
 						},
