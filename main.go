@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/knadh/koanf/providers/confmap"
-	// "github.com/knadh/koanf/parsers/toml"
-	// "github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/parsers/toml"
+	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 	"github.com/urfave/cli/v2"
 
@@ -44,9 +44,9 @@ func main() {
 	}, "."), nil)
 
 	// Override from configuration file
-	// if err := k.Load(file.Provider("config.toml"), toml.Parser()); err != nil {
-	// 	log.Printf("Error loading config: %v", err)
-	// }
+	if err := k.Load(file.Provider("config.toml"), toml.Parser()); err != nil {
+		log.Printf("Error loading config: %v", err)
+	}
 
 	// CLI interface
 	app := &cli.App{
