@@ -135,6 +135,13 @@ func CreateStream(name string, permalink string) (Stream, error) {
 	return result, err
 }
 
+func ListStreamFeeds(id string) (ListFeedsResponse, error) {
+	uri := fmt.Sprintf("/streams/%s.json", id)
+	result, err := RequestApi[ListFeedsResponse]("GET", uri, nil)
+
+	return result, err
+}
+
 type StreamAssignmentParameters struct {
 	StreamId string `json:"stream_id"`
 	FeedId   string `json:"feed_id"`
@@ -273,10 +280,10 @@ func main() {
 							},
 						},
 						Action: func(ctx *cli.Context) error {
-							streams, _ := ListAllStreams()
+							feeds, _ := ListStreamFeeds(ctx.String("stream_id"))
 
-							for _, stream := range streams.Streams {
-								fmt.Printf("%s %s\n", stream.Id, stream.Name)
+							for _, feed := range feeds.Feeds {
+								fmt.Printf("%-16s %-10s %-48s %s\n", feed.Id, feed.Type, feed.Uri, feed.Title)
 							}
 
 							return nil
