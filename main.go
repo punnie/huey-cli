@@ -113,10 +113,54 @@ func ListAllStreams() (StreamResponse, error) {
 	return result, err
 }
 
+type CreateStreamParameters struct {
+	Name string `json:"name"`
+	Permalink string `json:"permalink,omitempty"`
+}
+
+type CreateStreamRequest struct {
+	Stream CreateStreamParameters `json:"stream"`
+}
+
+func CreateStream(name string, permalink string) (Stream, error) {
+	payload := CreateStreamRequest{
+		Stream: CreateStreamParameters{
+			Name: name,
+			Permalink: permalink,
+		},
+	}
+
+	result, err := RequestApi[Stream]("POST", "/streams.json", payload)
+
+	return result, err
+}
+
+type StreamAssignmentParameters struct {
+	StreamId string `json:"stream_id"`
+	FeedId   string `json:"feed_id"`
+}
+
+type StreamAssignmentRequest struct {
+	StreamAssignment StreamAssignmentParameters `json:"stream_assignment"`
+}
+
+func CreateStringAssignment(stream_id string, feed_id string) (Stream, error) {
+	payload := StreamAssignmentRequest{
+		StreamAssignment: StreamAssignmentParameters{
+			StreamId: stream_id,
+			FeedId:   feed_id,
+		},
+	}
+
+	result, err := RequestApi[Stream]("POST", "/stream_assignments.json", payload)
+
+	return result, err
+}
+
 func main() {
 	// Defaults
 	k.Load(confmap.Provider(map[string]interface{}{
-		"api.url": "http://localhost:3000/api/v3",
+		"api.url":   "http://localhost:3000/api/v3",
 		"api.token": "123123123",
 	}, "."), nil)
 
@@ -174,13 +218,116 @@ func main() {
 				},
 			},
 			{
-				Name: "streams",
+				Name:    "streams",
 				Aliases: []string{"s"},
-				Usage: "manage streams",
+				Usage:   "manage streams",
 				Subcommands: []*cli.Command{
 					{
-						Name: "list",
+						Name:  "list",
 						Usage: "list streams",
+						Action: func(ctx *cli.Context) error {
+							streams, _ := ListAllStreams()
+
+							for _, stream := range streams.Streams {
+								fmt.Printf("%s %s\n", stream.Id, stream.Name)
+							}
+
+							return nil
+						},
+					},
+					{
+						Name:  "create",
+						Usage: "create a stream",
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:     "name",
+								Aliases:  []string{"n"},
+								Usage:    "name of the stream",
+								Required: true,
+							},
+
+							&cli.StringFlag{
+								Name:    "permalink",
+								Aliases: []string{"p"},
+								Usage:   "permalink for the stream",
+							},
+						},
+						Action: func(ctx *cli.Context) error {
+							stream, _ := CreateStream(ctx.String("name"), ctx.String("permalink"))
+
+							fmt.Printf("%s\n", stream.Id)
+
+							return nil
+						},
+					},
+					{
+						Name:  "list-feeds",
+						Usage: "list feeds in stream",
+
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:     "stream_id",
+								Aliases:  []string{"s"},
+								Usage:    "id of the stream",
+								Required: true,
+							},
+						},
+						Action: func(ctx *cli.Context) error {
+							streams, _ := ListAllStreams()
+
+							for _, stream := range streams.Streams {
+								fmt.Printf("%s %s\n", stream.Id, stream.Name)
+							}
+
+							return nil
+						},
+					},
+					{
+						Name:  "add-feeds",
+						Usage: "add feeds to a stream",
+
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:     "stream_id",
+								Aliases:  []string{"s"},
+								Usage:    "id of the stream",
+								Required: true,
+							},
+							&cli.StringSliceFlag{
+								Name:     "feed_id",
+								Aliases:  []string{"s"},
+								Usage:    "id of the feeds to add",
+								Required: true,
+							},
+						},
+						Action: func(ctx *cli.Context) error {
+							streams, _ := ListAllStreams()
+
+							for _, stream := range streams.Streams {
+								fmt.Printf("%s %s\n", stream.Id, stream.Name)
+							}
+
+							return nil
+						},
+					},
+					{
+						Name:  "remove-feeds",
+						Usage: "remove feeds from a stream",
+
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:     "stream_id",
+								Aliases:  []string{"s"},
+								Usage:    "id of the stream",
+								Required: true,
+							},
+							&cli.StringSliceFlag{
+								Name:     "feed_id",
+								Aliases:  []string{"s"},
+								Usage:    "id of the feeds to remove",
+								Required: true,
+							},
+						},
 						Action: func(ctx *cli.Context) error {
 							streams, _ := ListAllStreams()
 
