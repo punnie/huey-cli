@@ -47,7 +47,7 @@ func RequestApi[T any](verb string, path string, payloadData interface{}) (T, er
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode/100 != 2 {
 		log.Fatalf("Request failed with status: %s", resp.Status)
 	}
 
@@ -61,8 +61,10 @@ func RequestApi[T any](verb string, path string, payloadData interface{}) (T, er
 }
 
 type Feed struct {
-	Id string `json:"id"`
-	Uri string `json:"uri"`
+	Id    string `json:"id"`
+	Type  string `json:"type"`
+	Uri   string `json:"uri"`
+	Title string `json:"title"`
 }
 
 type ListFeedsResponse struct {
@@ -75,13 +77,18 @@ func ListAllFeeds() (ListFeedsResponse, error) {
 	return result, err
 }
 
+type CreateFeedParameters struct {
+	Uri               string `json:"uri"`
+	UseGooglebotAgent bool   `json:"use_googlebot_agent,omitempty"`
+}
+
 type CreateFeedRequest struct {
-	Feed Feed `json:"feed"`
+	Feed CreateFeedParameters `json:"feed"`
 }
 
 func CreateFeed(uri string) (Feed, error) {
 	payload := CreateFeedRequest{
-		Feed: Feed{
+		Feed: CreateFeedParameters{
 			Uri: uri,
 		},
 	}
@@ -92,7 +99,7 @@ func CreateFeed(uri string) (Feed, error) {
 }
 
 type Stream struct {
-	Id string `json:"id"`
+	Id   string `json:"id"`
 	Name string `json:"name"`
 }
 
@@ -122,38 +129,44 @@ func main() {
 	app := &cli.App{
 		Commands: []*cli.Command{
 			{
-				Name: "feeds",
+				Name:    "feeds",
 				Aliases: []string{"f"},
-				Usage: "manage feeds",
+				Usage:   "manage feeds",
 				Subcommands: []*cli.Command{
 					{
-						Name: "list",
+						Name:  "list",
 						Usage: "list feeds",
 						Action: func(ctx *cli.Context) error {
 							feeds, _ := ListAllFeeds()
 
 							for _, feed := range feeds.Feeds {
-								fmt.Printf("%s %s\n", feed.Id, feed.Uri)
+								fmt.Printf("%-16s %-10s %-48s %s\n", feed.Id, feed.Type, feed.Uri, feed.Title)
 							}
 
 							return nil
 						},
 					},
 					{
-						Name: "create",
+						Name:  "create",
 						Usage: "create a feed",
 						Flags: []cli.Flag{
-							&cli.StringFlag {
-								Name: "uri",
-									Aliases: []string{"u"},
-									Usage: "uri of the feed",
-									Required: true,
-								},
+							&cli.StringFlag{
+								Name:     "uri",
+								Aliases:  []string{"u"},
+								Usage:    "uri of the feed",
+								Required: true,
+							},
+
+							&cli.BoolFlag{
+								Name:    "use-googlebot-agent",
+								Aliases: []string{"g"},
+								Usage:   "use googlebot agent",
+							},
 						},
 						Action: func(ctx *cli.Context) error {
 							feed, _ := CreateFeed(ctx.String("uri"))
 
-							fmt.Printf("%s", feed.Id)
+							fmt.Printf("%s\n", feed.Id)
 
 							return nil
 						},
