@@ -1,2 +1,3 @@
 /huey-cli
 /.envrc
+/config.toml
